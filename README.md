@@ -7,164 +7,111 @@ Inspired by [Meta-Harness research](https://arxiv.org/abs/meta-harness) — capa
 ## Quick Start
 
 ```bash
-# Install
-npm install
+# View documentation
+ls docs/
 
-# Build
-npm run build
+# System Overview
+cat docs/1-system-overview/README.md
 
-# See available commands
-node dist/index.js --help
+# Harness Model
+cat docs/2-harness/README.md
 ```
 
-## How It Works
+## What is Meta-Agent?
+
+Meta-agent transforms a job description into a specialized, self-improving AI agent. The agent evolves through iterative benchmarking and self-modification until it reliably performs the target role.
 
 ```
-Job Description
-     ↓
-Task Library Generation (from real job postings)
-     ↓
-Harness Compiler reads harness.yaml
-     ↓
-Council of agents analyze → propose → validate changes
-     ↓
-Evolution Loop (self-improvement until quality threshold met)
-     ↓
-Specialist Agent (deployed runtime)
+Job Description → Task Library → Evolution Loop → Specialist Agent
 ```
 
-### The Key Insight
+## Key Concepts
 
-The same AI model, under different harness configurations, behaves like fundamentally different agents.
+### Harness
 
-**Meta-agent optimizes the harness, not the model.**
+A declarative blueprint defining the complete cognitive architecture. The harness is the single source of truth — changing it changes agent behavior.
 
-## Core Concepts
+### Constitution
 
-### 1. Harness (harness.yaml)
+Universal rules governing the system. Applies to every harness regardless of target role. Defines safety boundaries, council governance, and quality standards.
 
-A declarative blueprint that defines the entire agent:
-- Which components exist (planner, verifier, tools, etc.)
-- How they connect (topology/flow)
-- Execution settings (model, timeouts, retries)
-- What can be evolved
+### Task Library
 
-**The harness compiler interprets this file** — change the YAML, change the agent's behavior.
+Pre-generated benchmark tasks from real job postings. Defines what "success" looks like for the target role.
 
-### 2. Constitution (constitution.md)
+### Evolution Engine
 
-Universal rules governing evolution:
-- Safety boundaries (what the agent cannot do)
-- Council governance (how changes are decided)
-- Quality thresholds (when evolution stops)
+Iterative self-improvement loop. Evaluates, proposes, validates, and applies harness modifications.
 
-### 3. Task Library
+### Council
 
-Pre-generated benchmarks from real job postings. The agent evolves to perform well on these tasks.
+Multi-agent system coordinating self-improvement through structured decision-making.
 
-### 4. Evolution Engine
+### Sandbox
 
-Single agent + council loop:
-1. Run current harness on benchmarks
-2. Council analyzes failures
-3. Propose harness modifications
-4. Test harness validates changes
-5. Apply improvements
-6. Repeat
+Isolated execution environment ensuring safe benchmark evaluation.
 
-### 5. Runtime Compiler
-
-Not hardcoded logic — the compiler reads `harness.yaml` and executes the agent according to that blueprint.
-
-## File Structure
+## Documentation Structure
 
 ```
-meta-agent/
-├── harness/
-│   ├── harness.yaml      # THE blueprint (evolves)
-│   ├── prompts/          # Agent prompts
-│   ├── configs/          # Configuration
-│   └── subagents/        # Subagent harnesses
-├── constitution.md      # Universal rules
-├── task_library/        # Pre-generated benchmarks
-├── evolution/           # State tracking
-│   ├── current.json     # Current state
-│   ├── history/          # Generation snapshots
-│   └── failure_memory/  # Failed experiments
-└── src/                 # Source code
+docs/
+├── 1-system-overview/      # High-level architecture
+├── 2-harness/            # Harness model and sections
+├── 3-runtime-compiler/    # How harness is interpreted
+├── 4-constitution/        # Universal rules
+├── 5-task-library/        # Benchmark generation
+├── 6-evolution-engine/    # Self-improvement loop
+├── 7-council/             # Multi-agent decision making
+├── 8-subagents/            # Task execution agents
+├── 9-validation/          # Change testing pipeline
+├── 10-sandbox/             # Isolated execution
+├── 11-state-management/    # Evolution tracking
+├── 12-cli/                 # CLI interface
+├── 13-workflows/           # User workflows
+├── 14-interactions/        # Component interactions
+└── 15-edge-cases/         # Error handling
 ```
 
-## Commands
+## Module Dependencies
 
-```bash
-# Harness
-node dist/index.js harness show       # Display config
-node dist/index.js harness validate  # Validate YAML
-
-# Constitution
-node dist/index.js constitution show  # Show rules
-
-# Evolution
-node dist/index.js evolve start      # Start evolution
-node dist/index.js evolve status     # Check progress
-node dist/index.js evolve pause      # Pause
-node dist/index.js evolve stop       # Stop
-
-# State
-node dist/index.js state show        # Current state
-node dist/index.js state history     # View history
-
-# Tasks
-node dist/index.js tasks list        # List benchmarks
 ```
-
-## Example: Create a Senior Backend Engineer Agent
-
-```bash
-# 1. Write job description
-echo "Senior Backend Engineer..." > job.md
-
-# 2. Generate task library from web
-node dist/index.js tasks generate job.md
-
-# 3. Start evolution
-node dist/index.js evolve start --job job.md --threshold 85
-
-# 4. Wait for specialist to emerge
-# Evolution runs until 85% task success rate
-
-# 5. Build and deploy
-node dist/index.js build --output ./my-agent
-```
-
-## Quality Thresholds
-
-Evolution stops when:
-- Task success rate ≥ 85%
-- Reliability ≥ 80%
-- Efficiency ≤ 2x baseline
-
-Or when max generations (50) reached.
-
-## Safety
-
-The constitution enforces hard boundaries:
-- No privilege escalation
-- No data exfiltration
-- No self-replication outside the system
-- Resource limits always enforced
-
-## Development
-
-```bash
-# Watch mode
-npm run dev
-
-# Test
-npm test
-
-# Repl for interactive CLI
-npm run cli
+1-system-overview          ← Entry point
+        │
+        ▼
+4-constitution              ← Standalone
+        │
+        ▼
+2-harness                  ← Depends on constitution
+        │
+        ▼
+3-runtime-compiler         ← Depends on harness
+        │
+        ▼
+5-task-library              ← Depends on harness
+        │
+        ▼
+9-validation                ← Depends on subagents, task-library
+        │
+        ▼
+8-subagents                 ← Depends on harness, constitution
+        │
+        ▼
+10-sandbox                  ← Depends on subagents, constitution
+        │
+        ▼
+6-evolution-engine          ← Depends on all above
+        │
+        ▼
+7-council                   ← Depends on evolution-engine
+        │
+        ▼
+11-state-management         ← Depends on evolution-engine
+        │
+        ▼
+12-cli                      ← Depends on all modules
+        │
+        ▼
+13-15                       ← Depends on all modules
 ```
 
 ## License
