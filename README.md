@@ -1,118 +1,242 @@
-# Meta-Agent
+# Meta Agent
 
-**Self-evolving cognitive runtime for specialized agents.**
+> Digital Employee Framework for Pi Agent
 
-Inspired by [Meta-Harness research](https://arxiv.org/abs/meta-harness) — capability emerges from runtime organization, not model weights.
+Transform Pi Agent into a **digital employee factory**. Create specialized assistants with constitution, persona, skills, and extensions.
+
+---
+
+## What is Meta Agent?
+
+Meta Agent is a framework that sits on top of Pi Agent. It provides:
+
+- **Extensions** — Model router, memory, context manager, persona
+- **Skills** — Constitution and persona templates
+- **Employees** — Pre-configured digital employee definitions
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐          │
+│  │ Constitution│  │   Persona   │  │   Skills    │          │
+│  │   (Skill)   │  │   (Skill)   │  │  (Domain)   │          │
+│  └─────────────┘  └─────────────┘  └─────────────┘          │
+│                                                             │
+│  ┌────────────┐  ┌────────────┐  ┌────────────┐             │
+│  │   Model    │  │   Memory   │  │  Context    │             │
+│  │   Router   │  │  Extension │  │  Manager    │             │
+│  └────────────┘  └────────────┘  └────────────┘             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
 
 ## Quick Start
 
+### 1. Run with Extensions
+
 ```bash
-# View documentation
-ls docs/
-
-# System Overview
-cat docs/1-system-overview/README.md
-
-# Harness Model
-cat docs/2-harness/README.md
+pi -e ./extensions/model-router.ts \
+   -e ./extensions/memory.ts \
+   -e ./extensions/context-manager.ts \
+   -e ./extensions/persona.ts
 ```
 
-## What is Meta-Agent?
+### 2. Run with Skills
 
-Meta-agent transforms a job description into a specialized, self-improving AI agent. The agent evolves through iterative benchmarking and self-modification until it reliably performs the target role.
-
+```bash
+pi --skill ./skills/constitutions/medical/00-CONSTITUTION-medical.md \
+   --skill ./skills/personas/medical/10-PERSONA-medical.md
 ```
-Job Description → Task Library → Evolution Loop → Specialist Agent
+
+### 3. Run Complete Employee
+
+```bash
+pi -e ./extensions/model-router.ts \
+   -e ./extensions/memory.ts \
+   -e ./extensions/context-manager.ts \
+   -e ./extensions/persona.ts \
+   --skill ./skills/constitutions/medical/00-CONSTITUTION-medical.md \
+   --skill ./skills/personas/medical/10-PERSONA-medical.md
 ```
 
-## Key Concepts
+---
 
-### Harness
+## Extensions
 
-A declarative blueprint defining the complete cognitive architecture. The harness is the single source of truth — changing it changes agent behavior.
+| Extension | Purpose |
+|-----------|---------|
+| `model-router` | Routes tasks to appropriate models |
+| `memory` | Learns and persists facts across sessions |
+| `context-manager` | Prevents context overflow |
+| `persona` | Injects behavioral guidance |
+
+### Commands
+
+| Command | Description |
+|---------|-------------|
+| `/router-status` | Show model routing status |
+| `/memory-show` | Display stored memories |
+| `/memory-clear` | Clear all memories |
+| `/context-status` | Show context usage |
+| `/context-compact` | Manual compaction |
+| `/persona-show` | Display persona config |
+
+---
+
+## Skills
 
 ### Constitution
 
-Universal rules governing the system. Applies to every harness regardless of target role. Defines safety boundaries, council governance, and quality standards.
+Domain principles loaded as a skill:
 
-### Task Library
+```markdown
+# Medical Assistant Constitution
 
-Pre-generated benchmark tasks from real job postings. Defines what "success" looks like for the target role.
+## Core Principles
+1. Patient safety first
+2. Transparency about uncertainty
+3. Privacy protection
 
-### Evolution Engine
-
-Iterative self-improvement loop. Evaluates, proposes, validates, and applies harness modifications.
-
-### Council
-
-Multi-agent system coordinating self-improvement through structured decision-making.
-
-### Sandbox
-
-Isolated execution environment ensuring safe benchmark evaluation.
-
-## Documentation Structure
-
-```
-docs/
-├── 1-system-overview/      # High-level architecture
-├── 2-harness/            # Harness model and sections
-├── 3-runtime-compiler/    # How harness is interpreted
-├── 4-constitution/        # Universal rules
-├── 5-task-library/        # Benchmark generation
-├── 6-evolution-engine/    # Self-improvement loop
-├── 7-council/             # Multi-agent decision making
-├── 8-subagents/            # Task execution agents
-├── 9-validation/          # Change testing pipeline
-├── 10-sandbox/             # Isolated execution
-├── 11-state-management/    # Evolution tracking
-├── 12-cli/                 # CLI interface
-├── 13-workflows/           # User workflows
-├── 14-interactions/        # Component interactions
-└── 15-edge-cases/         # Error handling
+## Boundaries
+- DO NOT provide diagnoses
+- DO NOT prescribe medications
 ```
 
-## Module Dependencies
+### Persona
+
+Communication style loaded as a skill:
+
+```markdown
+# Medical Assistant Persona
+
+## Communication Style
+- Clear and jargon-free
+- Warm and empathetic
+- Ask clarifying questions
+
+## Tone
+- Professional but approachable
+```
+
+### Skill Priority
+
+Skills load by filename prefix:
 
 ```
-1-system-overview          ← Entry point
-        │
-        ▼
-4-constitution              ← Standalone
-        │
-        ▼
-2-harness                  ← Depends on constitution
-        │
-        ▼
-3-runtime-compiler         ← Depends on harness
-        │
-        ▼
-5-task-library              ← Depends on harness
-        │
-        ▼
-9-validation                ← Depends on subagents, task-library
-        │
-        ▼
-8-subagents                 ← Depends on harness, constitution
-        │
-        ▼
-10-sandbox                  ← Depends on subagents, constitution
-        │
-        ▼
-6-evolution-engine          ← Depends on all above
-        │
-        ▼
-7-council                   ← Depends on evolution-engine
-        │
-        ▼
-11-state-management         ← Depends on evolution-engine
-        │
-        ▼
-12-cli                      ← Depends on all modules
-        │
-        ▼
-13-15                       ← Depends on all modules
+00-CONSTITUTION-*  → Loaded first
+10-PERSONA-*       → Loaded second
+20-SKILL-*         → Loaded third
 ```
+
+---
+
+## Project Structure
+
+```
+meta-agent/
+├── skills/
+│   ├── constitutions/
+│   │   ├── 00-CONSTITUTION-template.md
+│   │   └── [domain]/
+│   │       └── 00-CONSTITUTION-[domain].md
+│   └── personas/
+│       ├── 00-PERSONA-template.md
+│       └── [domain]/
+│           └── 10-PERSONA-[domain].md
+│
+├── employees/
+│   └── [name]/
+│       └── config.json
+│
+├── architecture.md     # Full documentation
+└── README.md           # This file
+```
+
+---
+
+## Creating an Employee
+
+### 1. Create Constitution
+
+`skills/constitutions/my-domain/00-CONSTITUTION-my-domain.md`:
+
+```markdown
+# My Employee Constitution
+
+## Core Principles
+1. [Principle 1]
+2. [Principle 2]
+
+## Boundaries
+- DO NOT [prohibited action]
+- DO [allowed action]
+```
+
+### 2. Create Persona
+
+`skills/personas/my-domain/10-PERSONA-my-domain.md`:
+
+```markdown
+# My Employee Persona
+
+## Communication Style
+- [Style 1]
+- [Style 2]
+
+## Tone
+- [Tone description]
+```
+
+### 3. Create Employee Config
+
+`employees/my-employee/config.json`:
+
+```json
+{
+  "name": "my-employee",
+  "version": "1.0.0",
+  "description": "My custom digital employee",
+  
+  "constitution": {
+    "path": "skills/constitutions/my-domain/00-CONSTITUTION-my-domain.md"
+  },
+  
+  "persona": {
+    "path": "skills/personas/my-domain/10-PERSONA-my-domain.md"
+  },
+  
+  "extensions": [
+    "model-router",
+    "memory",
+    "context-manager",
+    "persona"
+  ]
+}
+```
+
+### 4. Run
+
+```bash
+pi -e ./extensions/model-router.ts \
+   -e ./extensions/memory.ts \
+   -e ./extensions/context-manager.ts \
+   -e ./extensions/persona.ts \
+   --skill ./skills/constitutions/my-domain/00-CONSTITUTION-my-domain.md \
+   --skill ./skills/personas/my-domain/10-PERSONA-my-domain.md
+```
+
+---
+
+## Architecture
+
+See [architecture.md](./architecture.md) for:
+- Extension implementation guides
+- Event system reference
+- Memory system design
+- Model routing algorithms
+- Integration details
+
+---
 
 ## License
 
