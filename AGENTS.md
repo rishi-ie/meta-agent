@@ -1,16 +1,68 @@
-# Meta Agent Operating Principles
+# Meta Agent - Project Context
 
-## Overview
+> Digital Employee Framework for Pi Agent
 
-Meta Agent is a digital employee framework built on top of Pi Agent. This file provides guidance for working with the Meta Agent codebase.
+## What This Project Is
 
-## Architecture
+Meta Agent transforms Pi Agent into a **digital employee factory**. Instead of a generic coding assistant, you create specialized employees with:
+
+- **Constitution** — Domain-specific principles and rules
+- **Persona** — Communication style and behavior
+- **Skills** — Domain knowledge and capabilities
+- **Extensions** — Custom tools (model router, memory, context manager)
+
+This is a documentation-only project. The actual extensions and skills are implemented by users based on the patterns in `architecture.md`.
+
+## Why This Project Exists
+
+The goal is to make Pi Agent modular enough to create specialized digital employees that:
+1. Have their own constitution (principles they follow)
+2. Have their own persona (how they communicate)
+3. Can route tasks to appropriate models
+4. Can learn and persist memory across sessions
+5. Can actively manage their context window
+
+## Core Design Decisions
+
+### 1. Everything as Extensions or Skills
+
+The framework is built entirely on Pi Agent's extension system. No core modifications needed.
+
+- Extensions: Code that runs in Pi Agent via `-e` flag
+- Skills: Markdown files that load into system prompt via `--skill` flag
+
+### 2. Constitution as Skill
+
+A constitution is just a skill (markdown file) that gets loaded first. No special handling needed from Pi Agent.
+
+### 3. Skill Priority via Naming
+
+Skills load by filename prefix:
+- `00-CONSTITUTION-*` → Loaded first
+- `10-PERSONA-*` → Loaded second
+- `20-SKILL-*` → Loaded third
+
+This ensures constitution and persona always apply before domain skills.
+
+### 4. Extensions Monitor Events
+
+Extensions work by subscribing to Pi Agent events:
+- `before_agent_start` — Inject context, route model
+- `turn_end` — Store facts, check context
+- `tool_result` — Learn from results
+
+### 5. No Sub-Agents
+
+The context manager is a single extension, not a sub-agent. It monitors events and acts on them, not a separate agent watching the main agent.
+
+## Architecture Overview
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                        META AGENT                           │
 │                     Digital Employee Factory                │
 ├─────────────────────────────────────────────────────────────┤
+│                                                             │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐          │
 │  │ Constitution│  │   Persona   │  │   Skills    │          │
 │  │   (Skill)   │  │   (Skill)   │  │  (Domain)   │          │
@@ -19,174 +71,69 @@ Meta Agent is a digital employee framework built on top of Pi Agent. This file p
 │  ┌────────────┐  ┌────────────┐  ┌────────────┐             │
 │  │   Model    │  │   Memory   │  │  Context    │             │
 │  │   Router   │  │  Extension │  │  Manager    │             │
+│  │(Extension) │  │ (Extension)│  │(Extension)  │             │
 │  └────────────┘  └────────────┘  └────────────┘             │
+│                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## Directory Structure
+## Extensions (Implemented by Users)
 
-```
-meta-agent/
-├── skills/              # Skill templates
-│   ├── constitutions/   # Domain principles
-│   ├── personas/        # Communication styles
-│   └── domain/          # Domain knowledge
-│
-├── employees/           # Employee configurations
-│   └── [name]/
-│       └── config.json
-│
-├── architecture.md      # Full architecture docs
-└── README.md            # User guide
-```
+### Model Router Extension
+- Listens to `before_agent_start`
+- Classifies task by keywords
+- Routes to appropriate model (haiku/sonnet/opus)
+- Can be rules-based or LLM-based
 
-## Extension Development
+### Memory Extension
+- Listens to `turn_end` and `tool_result`
+- Extracts facts from interactions
+- Persists via `appendEntry()`
+- Retrieves relevant memories on `before_agent_start`
 
-### Creating an Extension
+### Context Manager Extension
+- Listens to `turn_end`
+- Checks context usage via `getContextUsage()`
+- Triggers compaction when > 85%
+- Provides `/compact` command for manual compaction
 
-Extensions are standard Pi Agent extensions that:
-1. Subscribe to events
-2. Register tools and commands
-3. Manipulate context
+### Persona Extension
+- Listens to `before_agent_start`
+- Generates behavioral cues based on context
+- Injects via `sendMessage()`
 
-```typescript
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+## Skills (Created by Users)
 
-export default function myExtension(pi: ExtensionAPI) {
-  pi.on("before_agent_start", async (event, ctx) => {
-    // Handle before each turn
-  });
-  
-  pi.on("turn_end", async (event, ctx) => {
-    // Handle after each turn
-  });
-  
-  pi.registerTool({
-    name: "my-tool",
-    label: "My Tool",
-    description: "Does something",
-    parameters: Type.Object({ ... }),
-    async execute(toolCallId, params, signal, onUpdate, ctx) {
-      return { content: [{ type: "text", text: "Done" }] };
-    }
-  });
-  
-  pi.registerCommand("my-command", {
-    description: "Does something",
-    handler: async (args, ctx) => {
-      ctx.ui.notify("Done", "info");
-    }
-  });
-}
-```
+### Constitution Skill
+- Domain principles loaded first
+- Format: Core principles, boundaries, escalation
+- Naming: `00-CONSTITUTION-[domain].md`
 
-### Key Events
+### Persona Skill
+- Communication style loaded second
+- Format: Communication style, tone, response patterns
+- Naming: `10-PERSONA-[domain].md`
 
-| Event | When | Use Case |
-|-------|------|----------|
-| `session_start` | Session begins | Initialize state |
-| `session_shutdown` | Session ends | Persist state |
-| `before_agent_start` | Before each turn | Inject context, route model |
-| `turn_end` | After each turn | Store facts, check context |
-| `tool_result` | After tool execution | Learn from results |
-
-### Context API
-
-```typescript
-// Send message to agent (not shown in UI)
-ctx.sendMessage({ customType: "...", content: "...", display: false });
-
-// Persist data across sessions
-ctx.appendEntry("my-data", { key: "value" });
-
-// Access session state
-const entries = ctx.sessionManager.getEntries();
-
-// Get context usage
-const usage = ctx.getContextUsage();
-
-// Trigger compaction
-ctx.compact({ customInstructions: "Summarize" });
-
-// Switch model
-await pi.setModel(targetModel);
-```
-
-## Skill Development
-
-### Naming Convention
-
-Skills use priority prefixes based on filename:
-
-```
-00-CONSTITUTION-*  → Priority 1 (loaded first)
-10-PERSONA-*       → Priority 2
-20-SKILL-*         → Priority 3
-```
-
-### Constitution Structure
-
-```markdown
-# [Name] Constitution
-
-## Core Principles
-1. [Principle 1]
-2. [Principle 2]
-
-## Decision Framework
-Before any action:
-- Does this align with core principles?
-- Is there a risk I should consider?
-
-## Boundaries
-- DO NOT [prohibited action]
-- DO [allowed action]
-
-## Escalation
-When uncertain:
-1. Ask for clarification
-2. Request human review
-3. Document the issue
-```
-
-### Persona Structure
-
-```markdown
-# [Name] Persona
-
-## Communication Style
-- [Style 1]
-- [Style 2]
-
-## Tone
-- [Tone description]
-
-## Vocabulary
-- Use: [preferred terms]
-- Avoid: [terms to avoid]
-
-## Response Patterns
-- Greeting: [how to greet]
-- Uncertainty: [how to express uncertainty]
-- Closing: [how to close]
-```
+### Domain Skills
+- Additional knowledge loaded third
+- Naming: `20-SKILL-[name].md`
 
 ## Employee Configuration
 
-### config.json
+Each employee has a `config.json`:
 
 ```json
 {
-  "name": "my-employee",
+  "name": "medical-assistant",
   "version": "1.0.0",
-  "description": "My custom digital employee",
+  "description": "AI assistant for medical documentation",
   
   "constitution": {
-    "path": "skills/constitutions/my-domain/00-CONSTITUTION-my-domain.md"
+    "path": "skills/constitutions/medical/00-CONSTITUTION-medical.md"
   },
   
   "persona": {
-    "path": "skills/personas/my-domain/10-PERSONA-my-domain.md"
+    "path": "skills/personas/medical/10-PERSONA-medical.md"
   },
   
   "extensions": [
@@ -197,65 +144,164 @@ When uncertain:
   ],
   
   "model": {
-    "primary": "claude-sonnet"
+    "primary": "claude-sonnet",
+    "routing": {
+      "quick": "claude-haiku",
+      "reasoning": "claude-sonnet",
+      "strong": "claude-opus"
+    }
   }
 }
 ```
 
-## Running Employees
-
-### Load Extensions
+## Running an Employee
 
 ```bash
+# Load extensions
 pi -e ./extensions/model-router.ts \
    -e ./extensions/memory.ts \
    -e ./extensions/context-manager.ts \
    -e ./extensions/persona.ts
+
+# Load skills
+pi --skill ./skills/constitutions/medical/00-CONSTITUTION-medical.md \
+   --skill ./skills/personas/medical/10-PERSONA-medical.md
+
+# Or combined
+pi -e ./extensions/... --skill ./skills/...
 ```
 
-### Load Skills
+## Directory Structure
 
-```bash
-pi --skill ./skills/constitutions/my-domain/00-CONSTITUTION-my-domain.md \
-   --skill ./skills/personas/my-domain/10-PERSONA-my-domain.md
+```
+meta-agent/
+├── README.md              # Quick start guide
+├── architecture.md         # Full technical documentation
+├── AGENTS.md              # This file - project context
+├── LICENSE                # MIT
+│
+├── extensions/            # User-implemented extensions
+│   ├── model-router.ts
+│   ├── memory.ts
+│   ├── context-manager.ts
+│   └── persona.ts
+│
+├── skills/                # User-created skills
+│   ├── constitutions/
+│   │   ├── 00-CONSTITUTION-template.md
+│   │   └── [domain]/
+│   │       └── 00-CONSTITUTION-[domain].md
+│   ├── personas/
+│   │   ├── 00-PERSONA-template.md
+│   │   └── [domain]/
+│   │       └── 10-PERSONA-[domain].md
+│   └── domain/
+│
+└── employees/             # Employee configurations
+    └── [name]/
+        └── config.json
 ```
 
-### Complete Employee
+## Key Events (Extension Development)
+
+| Event | When | Common Uses |
+|-------|------|-------------|
+| `session_start` | Session begins | Initialize state |
+| `session_shutdown` | Session ends | Persist state |
+| `before_agent_start` | Before each turn | Inject context, route model |
+| `turn_end` | After each turn | Store facts, check context |
+| `tool_result` | After tool execution | Learn from results |
+| `message_start` | Message begins | Detect context |
+
+## Context API (Extension Development)
+
+```typescript
+// Inject message (display: false = not shown in UI)
+ctx.sendMessage({ customType: "...", content: "...", display: false });
+
+// Persist data across sessions
+ctx.appendEntry("my-data", { key: "value" });
+
+// Access session entries
+const entries = ctx.sessionManager.getEntries();
+
+// Get context usage
+const usage = ctx.getContextUsage();
+
+// Trigger compaction
+ctx.compact({ customInstructions: "Summarize" });
+
+// Switch model
+await pi.setModel(targetModel);
+
+// Show notification
+ctx.ui.notify("Message", "info");
+```
+
+## Testing Extensions
 
 ```bash
+# Test single extension
+pi -e ./extensions/model-router.ts
+
+# Test with skills
 pi -e ./extensions/model-router.ts \
-   -e ./extensions/memory.ts \
-   -e ./extensions/context-manager.ts \
-   -e ./extensions/persona.ts \
-   --skill ./skills/constitutions/my-domain/00-CONSTITUTION-my-domain.md \
-   --skill ./skills/personas/my-domain/10-PERSONA-my-domain.md
+   --skill ./skills/constitutions/00-CONSTITUTION-template.md
 ```
 
-## Code Quality
+## Future Enhancements
 
-- Extensions must export a default function
-- Use TypeBox for tool parameter schemas
-- Follow Pi Agent naming conventions
-- Test with `pi -e ./extensions/my-extension.ts`
+- [ ] Vector-based memory retrieval
+- [ ] LLM-based model routing
+- [ ] Multi-agent coordination
+- [ ] Employee marketplace
+- [ ] Version management
+- [ ] Testing framework
 
-## Adding New Extensions
+## Related Projects
 
-1. Create extension file in `extensions/`
-2. Export default function receiving `ExtensionAPI`
-3. Register handlers, tools, and commands
-4. Test with Pi Agent
+- [Pi Agent](https://github.com/earendil-works/pi) - The base framework
+- [Pi Agent Extensions](https://pi.dev) - Extension documentation
 
-## Adding New Skills
+## Conventions
 
-1. Create skill markdown file
-2. Use priority prefix (00-, 10-, 20-)
-3. Add to relevant subdirectory
-4. Test with employee config
+1. **Skill naming**: Priority prefix (00-, 10-, 20-)
+2. **Extension exports**: Default function, receives `ExtensionAPI`
+3. **Config format**: JSON with `name`, `version`, `description`
+4. **Commands**: Prefix with `/` (e.g., `/compact`, `/memory-show`)
+5. **File paths**: Relative to project root
 
-## Adding New Employees
+## Memory Storage
 
-1. Create `employees/[name]/` directory
-2. Add `config.json`
-3. Create skills directory
-4. Add constitution and persona
-5. Document in README
+### Session Memory
+Stored in session via `appendEntry()`:
+```typescript
+ctx.appendEntry("learned-facts", { fact: "...", timestamp: Date.now() });
+```
+
+### Cross-Session Memory
+File-based storage:
+```
+~/.meta-agent/memory/[employee-name].json
+```
+
+## Model Routing
+
+### Default Routes (Rules-based)
+
+| Task Type | Keywords | Model |
+|-----------|----------|-------|
+| Quick | format, lint, typo, comment | haiku |
+| Reasoning | debug, fix, refactor, analyze | sonnet |
+| Strong | architect, design, complex | opus |
+
+### Advanced (LLM-based)
+
+Can use a model to classify tasks, then route accordingly.
+
+## Security Notes
+
+- Extensions run with full system access
+- Only install from trusted sources
+- Review constitutions before deployment
+- Consider sandboxing for untrusted employees
