@@ -2,125 +2,189 @@
 
 > Digital Employee Framework for Pi Agent
 
-Transform Pi Agent into a **digital employee factory**. Create specialized assistants with constitution, persona, skills, and extensions.
+Transform Pi Agent into a **digital employee factory**. Configure your employee once, launch with one command.
 
 ---
 
-## What is Meta Agent?
-
-Meta Agent is a framework that sits on top of Pi Agent. It provides:
-
-- **Extensions** — Model router, memory, context manager, persona
-- **Skills** — Constitution and persona templates
-- **Employees** — Pre-configured digital employee definitions
+## Project Structure
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐          │
-│  │ Constitution│  │   Persona   │  │   Skills    │          │
-│  │   (Skill)   │  │   (Skill)   │  │  (Domain)   │          │
-│  └─────────────┘  └─────────────┘  └─────────────┘          │
-│                                                             │
-│  ┌────────────┐  ┌────────────┐  ┌────────────┐             │
-│  │   Model    │  │   Memory   │  │  Context    │             │
-│  │   Router   │  │  Extension │  │  Manager    │             │
-│  └────────────┘  └────────────┘  └────────────┘             │
-└─────────────────────────────────────────────────────────────┘
+meta-agent/                     # Cloned from this repo
+│
+├── pi/                         # Cloned Pi Agent (run ./run.sh from here)
+│   ├── packages/
+│   ├── scripts/
+│   └── pi-test.sh
+│
+├── meta-agent-config/          # Edit these files to configure your employee
+│   ├── extensions/              # .ts files - custom behavior
+│   │   ├── model-router.ts
+│   │   ├── memory.ts
+│   │   ├── context-manager.ts
+│   │   └── persona.ts
+│   │
+│   ├── skills/                 # .md files - knowledge and behavior
+│   │   ├── constitutions/
+│   │   │   └── 00-CONSTITUTION.md
+│   │   ├── personas/
+│   │   │   └── 10-PERSONA.md
+│   │   └── domain/
+│   │
+│   ├── prompts/                # .md files - extra system instructions
+│   │   └── extra-instructions.md
+│   │
+│   └── config.json             # Launch configuration
+│
+├── run.sh                       # Launch script (run this)
+│
+├── AGENTS.md                    # Project context (for AI agents)
+├── architecture.md               # Full technical documentation
+└── LICENSE                      # MIT
 ```
 
 ---
 
 ## Quick Start
 
-### 1. Run with Extensions
+### 1. Clone This Repo
 
 ```bash
-pi -e ./extensions/model-router.ts \
-   -e ./extensions/memory.ts \
-   -e ./extensions/context-manager.ts \
-   -e ./extensions/persona.ts
+git clone https://github.com/rishi-ie/meta-agent.git
+cd meta-agent
 ```
 
-### 2. Run with Skills
+### 2. Clone Pi Agent
 
 ```bash
-pi --skill ./skills/constitutions/medical/00-CONSTITUTION-medical.md \
-   --skill ./skills/personas/medical/10-PERSONA-medical.md
+git clone https://github.com/earendil-works/pi.git pi
+cd pi && npm install && cd ..
 ```
 
-### 3. Run Complete Employee
+### 3. Configure Your Employee
+
+Edit files in `meta-agent-config/`:
+
+| File | What to Edit |
+|------|--------------|
+| `extensions/*.ts` | Custom behavior code |
+| `skills/constitutions/00-CONSTITUTION.md` | Core principles |
+| `skills/personas/10-PERSONA.md` | Communication style |
+| `prompts/extra-instructions.md` | Extra instructions |
+| `config.json` | Launch settings |
+
+### 4. Launch
 
 ```bash
-pi -e ./extensions/model-router.ts \
-   -e ./extensions/memory.ts \
-   -e ./extensions/context-manager.ts \
-   -e ./extensions/persona.ts \
-   --skill ./skills/constitutions/medical/00-CONSTITUTION-medical.md \
-   --skill ./skills/personas/medical/10-PERSONA-medical.md
+./run.sh
 ```
 
 ---
 
-## Extensions
+## What You Can Configure
 
-| Extension | Purpose |
-|-----------|---------|
-| `model-router` | Routes tasks to appropriate models |
-| `memory` | Learns and persists facts across sessions |
-| `context-manager` | Prevents context overflow |
-| `persona` | Injects behavioral guidance |
+### Skills (Markdown Files)
+Knowledge and behavior loaded into system prompt.
 
-### Commands
+```
+skills/
+├── constitutions/       # Core principles
+│   └── 00-CONSTITUTION.md
+├── personas/           # Communication style
+│   └── 10-PERSONA.md
+└── domain/             # Domain knowledge
+    └── 20-SKILL-*.md
+```
 
-| Command | Description |
-|---------|-------------|
-| `/router-status` | Show model routing status |
-| `/memory-show` | Display stored memories |
-| `/memory-clear` | Clear all memories |
-| `/context-status` | Show context usage |
-| `/context-compact` | Manual compaction |
-| `/persona-show` | Display persona config |
+### Extensions (TypeScript Files)
+Custom code that runs in Pi Agent.
+
+```
+extensions/
+├── model-router.ts       # Route tasks to models
+├── memory.ts            # Learn and persist
+├── context-manager.ts    # Manage context window
+└── persona.ts           # Inject behavior
+```
+
+### Prompts (Markdown Files)
+Extra system instructions.
+
+```
+prompts/
+└── extra-instructions.md
+```
 
 ---
 
-## Skills
+## Three Types of Modular Components
 
-### Constitution
+| Type | Format | Purpose |
+|------|--------|---------|
+| **Skills** | .md files | What the employee knows and how it behaves |
+| **Extensions** | .ts files | What the employee does (code) |
+| **Prompts** | .md files | Extra system instructions |
 
-Domain principles loaded as a skill:
+Every module is either a **Skill**, **Extension**, or **Prompt**.
+
+---
+
+## Configuration
+
+### Edit Skills
+
+Create or edit `skills/constitutions/00-CONSTITUTION.md`:
 
 ```markdown
-# Medical Assistant Constitution
+# My Employee Constitution
 
 ## Core Principles
-1. Patient safety first
-2. Transparency about uncertainty
-3. Privacy protection
+1. Always prioritize safety
+2. Be transparent about uncertainty
 
 ## Boundaries
-- DO NOT provide diagnoses
-- DO NOT prescribe medications
+- DO NOT make unilateral decisions
+- DO ask for clarification when unsure
 ```
 
-### Persona
+### Edit Extensions
 
-Communication style loaded as a skill:
+Create or edit `extensions/my-extension.ts`:
 
-```markdown
-# Medical Assistant Persona
+```typescript
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
-## Communication Style
-- Clear and jargon-free
-- Warm and empathetic
-- Ask clarifying questions
-
-## Tone
-- Professional but approachable
+export default function myExtension(pi: ExtensionAPI) {
+  pi.on("before_agent_start", async (event, ctx) => {
+    // Your logic here
+  });
+}
 ```
 
-### Skill Priority
+### Update Launch Config
 
-Skills load by filename prefix:
+Edit `meta-agent-config/config.json`:
+
+```json
+{
+  "extensions": [
+    "extensions/model-router.ts",
+    "extensions/memory.ts"
+  ],
+  "skills": [
+    "skills/constitutions/00-CONSTITUTION.md",
+    "skills/personas/10-PERSONA.md"
+  ],
+  "prompts": [
+    "prompts/extra-instructions.md"
+  ]
+}
+```
+
+---
+
+## Skill Priority
+
+Skills load by filename prefix (priority order):
 
 ```
 00-CONSTITUTION-*  → Loaded first
@@ -130,100 +194,13 @@ Skills load by filename prefix:
 
 ---
 
-## Project Structure
-
-```
-meta-agent/
-├── skills/
-│   ├── constitutions/
-│   │   ├── 00-CONSTITUTION-template.md
-│   │   └── [domain]/
-│   │       └── 00-CONSTITUTION-[domain].md
-│   └── personas/
-│       ├── 00-PERSONA-template.md
-│       └── [domain]/
-│           └── 10-PERSONA-[domain].md
-│
-├── employees/
-│   └── [name]/
-│       └── config.json
-│
-├── architecture.md     # Full documentation
-└── README.md           # This file
-```
-
----
-
-## Creating an Employee
-
-### 1. Create Constitution
-
-`skills/constitutions/my-domain/00-CONSTITUTION-my-domain.md`:
-
-```markdown
-# My Employee Constitution
-
-## Core Principles
-1. [Principle 1]
-2. [Principle 2]
-
-## Boundaries
-- DO NOT [prohibited action]
-- DO [allowed action]
-```
-
-### 2. Create Persona
-
-`skills/personas/my-domain/10-PERSONA-my-domain.md`:
-
-```markdown
-# My Employee Persona
-
-## Communication Style
-- [Style 1]
-- [Style 2]
-
-## Tone
-- [Tone description]
-```
-
-### 3. Create Employee Config
-
-`employees/my-employee/config.json`:
-
-```json
-{
-  "name": "my-employee",
-  "version": "1.0.0",
-  "description": "My custom digital employee",
-  
-  "constitution": {
-    "path": "skills/constitutions/my-domain/00-CONSTITUTION-my-domain.md"
-  },
-  
-  "persona": {
-    "path": "skills/personas/my-domain/10-PERSONA-my-domain.md"
-  },
-  
-  "extensions": [
-    "model-router",
-    "memory",
-    "context-manager",
-    "persona"
-  ]
-}
-```
-
-### 4. Run
+## Launch Command
 
 ```bash
-pi -e ./extensions/model-router.ts \
-   -e ./extensions/memory.ts \
-   -e ./extensions/context-manager.ts \
-   -e ./extensions/persona.ts \
-   --skill ./skills/constitutions/my-domain/00-CONSTITUTION-my-domain.md \
-   --skill ./skills/personas/my-domain/10-PERSONA-my-domain.md
+./run.sh
 ```
+
+This reads `meta-agent-config/config.json` and runs Pi Agent with all configured extensions and skills.
 
 ---
 
