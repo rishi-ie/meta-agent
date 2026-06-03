@@ -1,20 +1,23 @@
 #!/bin/bash
 
 # Meta Agent Launch Script
-# Runs Pi Agent with Meta Agent configurations
-# All state stored locally in this folder
+# All state stored locally in .pi folder
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_DIR="$SCRIPT_DIR/meta-agent-config"
 PI_DIR="$SCRIPT_DIR/pi"
 LOCAL_PI_DIR="$SCRIPT_DIR/.pi"
 
-# Create local .pi directory if it doesn't exist
+# Create local .pi directory structure
 mkdir -p "$LOCAL_PI_DIR/agent/sessions"
+mkdir -p "$LOCAL_PI_DIR/agent/bin"
 
 # Set environment variables to use local folder
 export PI_CODING_AGENT_DIR="$LOCAL_PI_DIR/agent"
 export PI_CODING_AGENT_SESSION_DIR="$LOCAL_PI_DIR/agent/sessions"
+
+# Add local bin to PATH (for fd, ripgrep, etc.)
+export PATH="$LOCAL_PI_DIR/agent/bin:$PATH"
 
 # Check if pi directory exists
 if [ ! -d "$PI_DIR" ]; then
