@@ -26,17 +26,82 @@ mkdir -p "$LOCAL_PI_DIR/agent/sessions"
 mkdir -p "$LOCAL_PI_DIR/agent/bin"
 mkdir -p "$LOCAL_PI_DIR/agent/prompts"
 
-# Copy local settings if they don't exist (or if source is newer)
-if [ -f "$CONFIG_DIR/settings.json" ]; then
-    if [ ! -f "$LOCAL_PI_DIR/agent/settings.json" ] || \
-       [ "$CONFIG_DIR/settings.json" -nt "$LOCAL_PI_DIR/agent/settings.json" ]; then
-        cp "$CONFIG_DIR/settings.json" "$LOCAL_PI_DIR/agent/settings.json"
+# Auto-detect provider and model from auth.json
+if [ -f "$CONFIG_DIR/auth.json" ]; then
+    # Find first provider with an API key
+    DETECTED_PROVIDER=""
+    DETECTED_MODEL=""
+    
+    # Check each provider for a filled API key
+    for provider in anthropic google openai deepseek groq mistral openrouter together; do
+        KEY=$(jq -r ".$provider.key // \"\" " "$CONFIG_DIR/auth.json" 2>/dev/null)
+        if [ -n "$KEY" ] && [ "$KEY" != "" ]; then
+            DETECTED_PROVIDER="$provider"
+            break
+        fi
+    done
+    
+    # Set default model based on provider
+    case "$DETECTED_PROVIDER" in
+        "anthropic")
+            DETECTED_MODEL="claude-sonnet-4-5"
+            ;;
+        "google")
+            DETECTED_MODEL="gemini-2.5-flash"
+            ;;
+        "openai")
+            DETECTED_MODEL="gpt-4o"
+            ;;
+        "deepseek")
+            DETECTED_MODEL="deepseek-chat"
+            ;;
+        "groq")
+            DETECTED_MODEL="llama-3.3-70b-versatile"
+            ;;
+        "mistral")
+            DETECTED_MODEL="mistral-large-latest"
+            ;;
+        "openrouter")
+            DETECTED_MODEL="anthropic/claude-3.5-sonnet"
+            ;;
+        "together")
+            DETECTED_MODEL="meta-llama/Llama-3.3-70B-Instruct"
+            ;;
+        *)
+            DETECTED_PROVIDER=""
+            DETECTED_MODEL=""
+            ;;
+    esac
+    
+    # Override settings.json with detected values (if not already set)
+    if [ -n "$DETECTED_PROVIDER" ]; then
+        echo "Detected provider: $DETECTED_PROVIDER"
+        echo "Detected model: $DETECTED_MODEL"
+        
+        # Create a temporary settings with auto-detected values
+        cat > "$LOCAL_PI_DIR/agent/settings.json.tmp" << EOF
+{
+  "lastChangelogVersion": "0.78.0",
+  "defaultProvider": "$DETECTED_PROVIDER",
+  "defaultModel": "$DETECTED_MODEL",
+  "defaultThinkingLevel": "medium"
+}
+EOF
+        # Copy auth.json
+        cp "$CONFIG_DIR/auth.json" "$LOCAL_PI_DIR/agent/auth.json"
+        
+        # Use the auto-detected settings
+        cp "$LOCAL_PI_DIR/agent/settings.json.tmp" "$LOCAL_PI_DIR/agent/settings.json"
+        rm -f "$LOCAL_PI_DIR/agent/settings.json.tmp"
     fi
-fi
-
-# Copy auth.json if it exists and local doesn't
-if [ -f "$CONFIG_DIR/auth.json" ] && [ ! -f "$LOCAL_PI_DIR/agent/auth.json" ]; then
-    cp "$CONFIG_DIR/auth.json" "$LOCAL_PI_DIR/agent/auth.json"
+else
+    # No auth.json, just copy settings if exists
+    if [ -f "$CONFIG_DIR/settings.json" ]; then
+        if [ ! -f "$LOCAL_PI_DIR/agent/settings.json" ] || \
+           [ "$CONFIG_DIR/settings.json" -nt "$LOCAL_PI_DIR/agent/settings.json" ]; then
+            cp "$CONFIG_DIR/settings.json" "$LOCAL_PI_DIR/agent/settings.json"
+        fi
+    fi
 fi
 
 # Set environment variables to use local folder

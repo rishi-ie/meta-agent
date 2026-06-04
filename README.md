@@ -12,31 +12,16 @@ Transform Pi Agent into a **digital employee factory**. Configure your employee 
 meta-agent/                     # Cloned from this repo
 │
 ├── pi/                         # Cloned automatically on first run
-│   ├── packages/
-│   ├── scripts/
-│   └── pi-test.sh
 │
 ├── meta-agent-config/          # Edit these files to configure your employee
 │   ├── config.json             # Which extensions/skills/prompts to load
-│   ├── settings.json           # Provider, model, thinking level
+│   ├── settings.json           # Provider, model, thinking level (auto-detected)
 │   ├── auth.json               # API keys (create from auth.json.example)
 │   ├── auth.json.example       # Template for auth.json
 │   │
 │   ├── extensions/            # .ts files - custom behavior
-│   │   ├── model-router.ts
-│   │   ├── memory.ts
-│   │   ├── context-manager.ts
-│   │   └── persona.ts
-│   │
 │   ├── skills/                 # .md files - knowledge and behavior
-│   │   ├── constitutions/
-│   │   │   └── 00-CONSTITUTION.md
-│   │   ├── personas/
-│   │   │   └── 10-PERSONA.md
-│   │   └── domain/
-│   │
 │   └── prompts/                # .md files - extra system instructions
-│       └── extra-instructions.md
 │
 ├── .pi/                        # Local Pi Agent state (gitignored)
 │   └── agent/
@@ -69,36 +54,49 @@ cd meta-agent
 cp meta-agent-config/auth.json.example meta-agent-config/auth.json
 ```
 
-Edit `meta-agent-config/auth.json` and add your API key:
+Edit `meta-agent-config/auth.json`:
+- Find your provider section
+- Add your API key to the `key` field
 
 ```json
 {
   "anthropic": {
     "type": "api_key",
     "key": "sk-ant-your-actual-key-here"
+  },
+  "google": {
+    "type": "api_key",
+    "key": ""
   }
 }
 ```
 
-### 3. Configure (Optional)
-
-Edit `meta-agent-config/settings.json` to set your provider and model:
-
-```json
-{
-  "defaultProvider": "anthropic",
-  "defaultModel": "claude-sonnet-4-5",
-  "defaultThinkingLevel": "medium"
-}
-```
-
-### 4. Run
+### 3. Run
 
 ```bash
 ./run.sh
 ```
 
-That's it. Pi Agent is cloned automatically on first run.
+That's it. Provider and model are **auto-detected** from your API key.
+
+---
+
+## Supported Providers
+
+| Provider | API Key Env Var |
+|-----------|-----------------|
+| Anthropic | `ANTHROPIC_API_KEY` |
+| Google | `GEMINI_API_KEY` |
+| OpenAI | `OPENAI_API_KEY` |
+| DeepSeek | `DEEPSEEK_API_KEY` |
+| Groq | `GROQ_API_KEY` |
+| Mistral | `MISTRAL_API_KEY` |
+| OpenRouter | `OPENROUTER_API_KEY` |
+| Together AI | `TOGETHER_API_KEY` |
+| Fireworks AI | `FIREWORKS_API_KEY` |
+| NVIDIA NIM | `NVIDIA_API_KEY` |
+| Cerebras | `CEREBRAS_API_KEY` |
+| Hugging Face | `HF_TOKEN` |
 
 ---
 
@@ -107,11 +105,48 @@ That's it. Pi Agent is cloned automatically on first run.
 1. **Checks for Pi Agent**: Clones from GitHub if missing
 2. **Installs dependencies**: `npm install` in pi folder
 3. **Creates directories**: `.pi/agent/sessions/`, `.pi/agent/bin/`
-4. **Copies settings**: `meta-agent-config/settings.json` → `.pi/agent/settings.json`
-5. **Copies auth**: `meta-agent-config/auth.json` → `.pi/agent/auth.json`
-6. **Sets environment variables**: `PI_CODING_AGENT_DIR=.pi/agent`
-7. **Loads extensions/skills/prompts**: From `meta-agent-config/config.json`
-8. **Launches Pi Agent**: With all your configurations
+4. **Auto-detects provider**: Scans `auth.json` for first filled API key
+5. **Auto-selects model**: Uses sensible default for your provider
+6. **Copies settings**: To `.pi/agent/settings.json`
+7. **Copies auth**: To `.pi/agent/auth.json`
+8. **Sets environment variables**: `PI_CODING_AGENT_DIR=.pi/agent`
+9. **Loads extensions/skills/prompts**: From `meta-agent-config/config.json`
+10. **Launches Pi Agent**: With auto-detected configuration
+
+---
+
+## Auto-Detection
+
+If you only fill in one API key, the system automatically:
+
+1. Detects which provider you have credentials for
+2. Selects a sensible default model for that provider
+3. Uses `medium` thinking level by default
+
+| Provider | Auto-Selected Model |
+|----------|---------------------|
+| Anthropic | `claude-sonnet-4-5` |
+| Google | `gemini-2.5-flash` |
+| OpenAI | `gpt-4o` |
+| DeepSeek | `deepseek-chat` |
+| Groq | `llama-3.3-70b-versatile` |
+| Mistral | `mistral-large-latest` |
+| OpenRouter | `anthropic/claude-3.5-sonnet` |
+| Together | `meta-llama/Llama-3.3-70B-Instruct` |
+
+---
+
+## Override Auto-Detection
+
+If you want specific settings, edit `meta-agent-config/settings.json`:
+
+```json
+{
+  "defaultProvider": "anthropic",
+  "defaultModel": "claude-opus-4-5",
+  "defaultThinkingLevel": "high"
+}
+```
 
 ---
 
@@ -120,7 +155,7 @@ That's it. Pi Agent is cloned automatically on first run.
 | File | Purpose | Git Tracked |
 |------|---------|-------------|
 | `config.json` | Which modules to load | ✅ |
-| `settings.json` | Provider, model, thinking | ✅ |
+| `settings.json` | Override provider/model | ✅ |
 | `auth.json` | API keys | ❌ (add to .gitignore) |
 | `extensions/*.ts` | Custom behavior code | ✅ |
 | `skills/*.md` | Knowledge and behavior | ✅ |
@@ -135,54 +170,6 @@ That's it. Pi Agent is cloned automatically on first run.
 | **Skills** | .md files | What the employee knows and how it behaves |
 | **Extensions** | .ts files | What the employee does (code) |
 | **Prompts** | .md files | Extra system instructions |
-
-Every module is either a **Skill**, **Extension**, or **Prompt**.
-
----
-
-## Edit Skills
-
-Create or edit `meta-agent-config/skills/constitutions/00-CONSTITUTION.md`:
-
-```markdown
-# My Employee Constitution
-
-## Core Principles
-1. Always prioritize safety
-2. Be transparent about uncertainty
-
-## Boundaries
-- DO NOT make unilateral decisions
-- DO ask for clarification when unsure
-```
-
----
-
-## Edit Extensions
-
-Create or edit `meta-agent-config/extensions/my-extension.ts`:
-
-```typescript
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-
-export default function myExtension(pi: ExtensionAPI) {
-  pi.on("before_agent_start", async (event, ctx) => {
-    // Your logic here
-  });
-}
-```
-
----
-
-## Skill Priority
-
-Skills load by filename prefix (priority order):
-
-```
-00-CONSTITUTION-*  → Loaded first
-10-PERSONA-*       → Loaded second
-20-SKILL-*         → Loaded third
-```
 
 ---
 
