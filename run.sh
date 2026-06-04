@@ -12,8 +12,16 @@ LOCAL_PI_DIR="$SCRIPT_DIR/.pi"
 if [ ! -d "$PI_DIR" ]; then
     echo "Cloning Pi Agent..."
     git clone https://github.com/earendil-works/pi.git "$PI_DIR"
-    cd "$PI_DIR" && npm install && cd "$SCRIPT_DIR"
 fi
+
+# Check if node_modules exists, install if missing
+if [ ! -d "$PI_DIR/node_modules" ]; then
+    echo "Installing Pi Agent dependencies..."
+    cd "$PI_DIR" && npm install
+fi
+
+# Go back to script directory
+cd "$SCRIPT_DIR"
 
 # Check if pi-test.sh exists
 if [ ! -f "$PI_DIR/pi-test.sh" ]; then
