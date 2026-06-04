@@ -1,0 +1,10 @@
+{
+  "anthropic": {
+    "type": "api_key",
+    "key": "YOUR_ANTHROPIC_API_KEY_HERE"
+  },
+  "google": {
+    "type": "api_key", 
+    "key": "YOUR_GOOGLE_API_KEY_HERE"
+  }
+}

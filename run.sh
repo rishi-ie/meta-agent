@@ -11,6 +11,20 @@ LOCAL_PI_DIR="$SCRIPT_DIR/.pi"
 # Create local .pi directory structure
 mkdir -p "$LOCAL_PI_DIR/agent/sessions"
 mkdir -p "$LOCAL_PI_DIR/agent/bin"
+mkdir -p "$LOCAL_PI_DIR/agent/prompts"
+
+# Copy local settings if they don't exist (or if source is newer)
+if [ -f "$CONFIG_DIR/settings.json" ]; then
+    if [ ! -f "$LOCAL_PI_DIR/agent/settings.json" ] || \
+       [ "$CONFIG_DIR/settings.json" -nt "$LOCAL_PI_DIR/agent/settings.json" ]; then
+        cp "$CONFIG_DIR/settings.json" "$LOCAL_PI_DIR/agent/settings.json"
+    fi
+fi
+
+# Copy auth.json if it exists and local doesn't
+if [ -f "$CONFIG_DIR/auth.json" ] && [ ! -f "$LOCAL_PI_DIR/agent/auth.json" ]; then
+    cp "$CONFIG_DIR/auth.json" "$LOCAL_PI_DIR/agent/auth.json"
+fi
 
 # Set environment variables to use local folder
 export PI_CODING_AGENT_DIR="$LOCAL_PI_DIR/agent"
