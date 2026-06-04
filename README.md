@@ -11,13 +11,18 @@ Transform Pi Agent into a **digital employee factory**. Configure your employee 
 ```
 meta-agent/                     # Cloned from this repo
 │
-├── pi/                         # Cloned Pi Agent (run ./run.sh from here)
+├── pi/                         # Cloned Pi Agent
 │   ├── packages/
 │   ├── scripts/
 │   └── pi-test.sh
 │
 ├── meta-agent-config/          # Edit these files to configure your employee
-│   ├── extensions/              # .ts files - custom behavior
+│   ├── config.json             # Which extensions/skills/prompts to load
+│   ├── settings.json           # Provider, model, thinking level
+│   ├── auth.json               # API keys (create from auth.json.example)
+│   ├── auth.json.example       # Template for auth.json
+│   │
+│   ├── extensions/            # .ts files - custom behavior
 │   │   ├── model-router.ts
 │   │   ├── memory.ts
 │   │   ├── context-manager.ts
@@ -30,16 +35,21 @@ meta-agent/                     # Cloned from this repo
 │   │   │   └── 10-PERSONA.md
 │   │   └── domain/
 │   │
-│   ├── prompts/                # .md files - extra system instructions
-│   │   └── extra-instructions.md
-│   │
-│   └── config.json             # Launch configuration
+│   └── prompts/                # .md files - extra system instructions
+│       └── extra-instructions.md
 │
-├── run.sh                       # Launch script (run this)
+├── .pi/                        # Local Pi Agent state (gitignored)
+│   └── agent/
+│       ├── settings.json       # Copied from meta-agent-config on launch
+│       ├── auth.json           # Copied from meta-agent-config on launch
+│       ├── sessions/           # Your conversation sessions
+│       └── bin/                # Local binaries (fd, ripgrep)
 │
-├── AGENTS.md                    # Project context (for AI agents)
-├── architecture.md               # Full technical documentation
-└── LICENSE                      # MIT
+├── run.sh                      # Launch script (run this)
+│
+├── AGENTS.md                   # Project context (for AI agents)
+├── architecture.md             # Full technical documentation
+└── LICENSE                    # MIT
 ```
 
 ---
@@ -60,19 +70,36 @@ git clone https://github.com/earendil-works/pi.git pi
 cd pi && npm install && cd ..
 ```
 
-### 3. Configure Your Employee
+### 3. Add Your API Key
 
-Edit files in `meta-agent-config/`:
+```bash
+cp meta-agent-config/auth.json.example meta-agent-config/auth.json
+```
 
-| File | What to Edit |
-|------|--------------|
-| `extensions/*.ts` | Custom behavior code |
-| `skills/constitutions/00-CONSTITUTION.md` | Core principles |
-| `skills/personas/10-PERSONA.md` | Communication style |
-| `prompts/extra-instructions.md` | Extra instructions |
-| `config.json` | Launch settings |
+Edit `meta-agent-config/auth.json` and add your API key:
 
-### 4. Launch
+```json
+{
+  "anthropic": {
+    "type": "api_key",
+    "key": "sk-ant-your-actual-key-here"
+  }
+}
+```
+
+### 4. Configure (Optional)
+
+Edit `meta-agent-config/settings.json` to set your provider and model:
+
+```json
+{
+  "defaultProvider": "anthropic",
+  "defaultModel": "claude-sonnet-4-5",
+  "defaultThinkingLevel": "medium"
+}
+```
+
+### 5. Launch
 
 ```bash
 ./run.sh
@@ -80,39 +107,27 @@ Edit files in `meta-agent-config/`:
 
 ---
 
-## What You Can Configure
+## What Happens When You Run `./run.sh`
 
-### Skills (Markdown Files)
-Knowledge and behavior loaded into system prompt.
+1. **Creates directories**: `.pi/agent/sessions/`, `.pi/agent/bin/`
+2. **Copies settings**: `meta-agent-config/settings.json` → `.pi/agent/settings.json`
+3. **Copies auth**: `meta-agent-config/auth.json` → `.pi/agent/auth.json`
+4. **Sets environment variables**: `PI_CODING_AGENT_DIR=.pi/agent`
+5. **Loads extensions/skills/prompts**: From `meta-agent-config/config.json`
+6. **Launches Pi Agent**: With all your configurations
 
-```
-skills/
-├── constitutions/       # Core principles
-│   └── 00-CONSTITUTION.md
-├── personas/           # Communication style
-│   └── 10-PERSONA.md
-└── domain/             # Domain knowledge
-    └── 20-SKILL-*.md
-```
+---
 
-### Extensions (TypeScript Files)
-Custom code that runs in Pi Agent.
+## Configuration Files
 
-```
-extensions/
-├── model-router.ts       # Route tasks to models
-├── memory.ts            # Learn and persist
-├── context-manager.ts    # Manage context window
-└── persona.ts           # Inject behavior
-```
-
-### Prompts (Markdown Files)
-Extra system instructions.
-
-```
-prompts/
-└── extra-instructions.md
-```
+| File | Purpose | Git Tracked |
+|------|---------|-------------|
+| `config.json` | Which modules to load | ✅ |
+| `settings.json` | Provider, model, thinking | ✅ |
+| `auth.json` | API keys | ❌ (add to .gitignore) |
+| `extensions/*.ts` | Custom behavior code | ✅ |
+| `skills/*.md` | Knowledge and behavior | ✅ |
+| `prompts/*.md` | Extra instructions | ✅ |
 
 ---
 
@@ -128,11 +143,9 @@ Every module is either a **Skill**, **Extension**, or **Prompt**.
 
 ---
 
-## Configuration
+## Edit Skills
 
-### Edit Skills
-
-Create or edit `skills/constitutions/00-CONSTITUTION.md`:
+Create or edit `meta-agent-config/skills/constitutions/00-CONSTITUTION.md`:
 
 ```markdown
 # My Employee Constitution
@@ -146,9 +159,11 @@ Create or edit `skills/constitutions/00-CONSTITUTION.md`:
 - DO ask for clarification when unsure
 ```
 
-### Edit Extensions
+---
 
-Create or edit `extensions/my-extension.ts`:
+## Edit Extensions
+
+Create or edit `meta-agent-config/extensions/my-extension.ts`:
 
 ```typescript
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
@@ -157,26 +172,6 @@ export default function myExtension(pi: ExtensionAPI) {
   pi.on("before_agent_start", async (event, ctx) => {
     // Your logic here
   });
-}
-```
-
-### Update Launch Config
-
-Edit `meta-agent-config/config.json`:
-
-```json
-{
-  "extensions": [
-    "extensions/model-router.ts",
-    "extensions/memory.ts"
-  ],
-  "skills": [
-    "skills/constitutions/00-CONSTITUTION.md",
-    "skills/personas/10-PERSONA.md"
-  ],
-  "prompts": [
-    "prompts/extra-instructions.md"
-  ]
 }
 ```
 
@@ -191,16 +186,6 @@ Skills load by filename prefix (priority order):
 10-PERSONA-*       → Loaded second
 20-SKILL-*         → Loaded third
 ```
-
----
-
-## Launch Command
-
-```bash
-./run.sh
-```
-
-This reads `meta-agent-config/config.json` and runs Pi Agent with all configured extensions and skills.
 
 ---
 
