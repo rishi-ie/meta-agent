@@ -11,7 +11,7 @@ Transform Pi Agent into a **digital employee factory**. Configure your employee 
 ```
 meta-agent/                     # Cloned from this repo
 │
-├── pi/                         # Cloned Pi Agent
+├── pi/                         # Cloned automatically on first run
 │   ├── packages/
 │   ├── scripts/
 │   └── pi-test.sh
@@ -63,14 +63,7 @@ git clone https://github.com/rishi-ie/meta-agent.git
 cd meta-agent
 ```
 
-### 2. Clone Pi Agent
-
-```bash
-git clone https://github.com/earendil-works/pi.git pi
-cd pi && npm install && cd ..
-```
-
-### 3. Add Your API Key
+### 2. Add Your API Key
 
 ```bash
 cp meta-agent-config/auth.json.example meta-agent-config/auth.json
@@ -87,7 +80,7 @@ Edit `meta-agent-config/auth.json` and add your API key:
 }
 ```
 
-### 4. Configure (Optional)
+### 3. Configure (Optional)
 
 Edit `meta-agent-config/settings.json` to set your provider and model:
 
@@ -99,22 +92,26 @@ Edit `meta-agent-config/settings.json` to set your provider and model:
 }
 ```
 
-### 5. Launch
+### 4. Run
 
 ```bash
 ./run.sh
 ```
 
+That's it. Pi Agent is cloned automatically on first run.
+
 ---
 
 ## What Happens When You Run `./run.sh`
 
-1. **Creates directories**: `.pi/agent/sessions/`, `.pi/agent/bin/`
-2. **Copies settings**: `meta-agent-config/settings.json` → `.pi/agent/settings.json`
-3. **Copies auth**: `meta-agent-config/auth.json` → `.pi/agent/auth.json`
-4. **Sets environment variables**: `PI_CODING_AGENT_DIR=.pi/agent`
-5. **Loads extensions/skills/prompts**: From `meta-agent-config/config.json`
-6. **Launches Pi Agent**: With all your configurations
+1. **Checks for Pi Agent**: Clones from GitHub if missing
+2. **Installs dependencies**: `npm install` in pi folder
+3. **Creates directories**: `.pi/agent/sessions/`, `.pi/agent/bin/`
+4. **Copies settings**: `meta-agent-config/settings.json` → `.pi/agent/settings.json`
+5. **Copies auth**: `meta-agent-config/auth.json` → `.pi/agent/auth.json`
+6. **Sets environment variables**: `PI_CODING_AGENT_DIR=.pi/agent`
+7. **Loads extensions/skills/prompts**: From `meta-agent-config/config.json`
+8. **Launches Pi Agent**: With all your configurations
 
 ---
 
