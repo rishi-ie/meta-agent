@@ -1,16 +1,68 @@
 # Meta Agent
 
-Transform Pi Agent into a **digital employee factory**. Create specialized employees with their own personality, knowledge, and behavior.
+Transform Pi Agent into a **digital employee factory**. Create specialized employees with their own personality, knowledge, and behavior in minutes.
 
 ## What is this?
 
-Instead of one generic AI assistant, you create **digital employees** - each with:
-- **Constitution** - Core principles and boundaries
-- **Persona** - Communication style and tone
-- **Skills** - Domain knowledge and capabilities
-- **Extensions** - Custom behavior and tools
+A framework for creating **digital employees** - AI assistants configured for specific roles. Each employee has:
 
-Each employee is isolated: its sessions, settings, and configuration live in its own folder and don't interfere with other employees or your global Pi Agent.
+- **Constitution** - Core principles and rules that never change
+- **Persona** - Communication style, tone, and behavioral patterns
+- **Skills** - Domain knowledge and capabilities
+- **Extensions** - Custom tools and behaviors via code
+- **Prompts** - Extra instructions injected into system prompt
+
+**The modular design means:** Swap constitutions, personas, or extensions to create entirely new employees. No code changes needed - just edit markdown files.
+
+## How Modularity Works
+
+### Skills (Markdown Files)
+
+Knowledge loaded into the system prompt. Edit a `.md` file = employee learns new behavior.
+
+```
+skills/
+├── constitutions/00-CONSTITUTION-medical.md   # "Never recommend medication"
+├── personas/10-PERSONA-medical.md             # "Use empathetic, clear language"
+└── domain/20-SKILL-cardiology.md             # "Cardiac anatomy, treatments, protocols"
+```
+
+### Extensions (TypeScript Files)
+
+Custom code that runs in Pi Agent. Subscribe to events, register tools, modify behavior.
+
+```typescript
+export default function myExtension(pi) {
+  pi.on("before_agent_start", async (event, ctx) => {
+    // Custom routing, memory, context management
+  });
+}
+```
+
+### Prompts (Markdown Files)
+
+Extra system instructions appended on launch.
+
+## Creating a New Employee
+
+1. **Copy meta-agent repo** to `my-employee/`
+2. **Edit constitution** - `skills/constitutions/00-CONSTITUTION-my-role.md`
+3. **Edit persona** - `skills/personas/10-PERSONA-my-role.md`
+4. **Add domain skills** - `skills/domain/20-SKILL-my-domain.md`
+5. **Configure extensions** - Edit or add `.ts` files in `extensions/`
+6. **Set API key** - `auth.json`
+7. **Run** - `./run.sh`
+
+New employee ready in under 10 minutes.
+
+## Use Cases
+
+| Employee | Constitution Focus | Persona | Skills |
+|----------|-------------------|---------|--------|
+| Medical Assistant | No diagnoses, safety first | Empathetic, clear | Medical protocols |
+| Code Reviewer | Security, best practices | Direct, precise | Language-specific |
+| Research Analyst | Citations, accuracy | Thorough, skeptical | Research methodology |
+| Customer Support | Policy compliance | Friendly, patient | Product knowledge |
 
 ## Quick Start
 
@@ -21,38 +73,6 @@ cp meta-agent-config/auth.json.example meta-agent-config/auth.json
 # Edit auth.json - add your API key
 ./run.sh
 ```
-
-## How It Works
-
-1. Clones Pi Agent (first run)
-2. Installs dependencies (first run)
-3. Reads your `auth.json` to detect provider and model
-4. Loads your extensions, skills, and prompts
-5. Launches Pi Agent with your configuration
-
-All data stays in the `.pi/` folder - nothing touches your global `~/.pi/`.
-
-## Project Structure
-
-```
-meta-agent/
-├── pi/                    # Pi Agent (cloned automatically)
-├── meta-agent-config/     # Your employee configuration
-│   ├── auth.json         # API keys
-│   ├── settings.json     # Provider, model, thinking level
-│   ├── config.json       # Which modules to load
-│   ├── extensions/       # Custom behavior (.ts files)
-│   └── skills/           # Knowledge (.md files)
-│       ├── constitutions/  # Core principles
-│       ├── personas/       # Communication style
-│       └── domain/        # Domain knowledge
-├── .pi/                   # Local state (gitignored)
-└── run.sh                 # Launch script
-```
-
-## Supported Providers
-
-Anthropic, Google, OpenAI, DeepSeek, Groq, Mistral, OpenRouter, Together AI, Fireworks, NVIDIA NIM, Cerebras, Hugging Face
 
 ## Auto-Detection
 
@@ -66,17 +86,20 @@ Fill in one API key and the system auto-selects provider and model:
 | DeepSeek | deepseek-chat |
 | Groq | llama-3.3-70b-versatile |
 
-## Use Cases
+## Project Structure
 
-- **Medical Assistant** - HIPAA-compliant, conservative recommendations
-- **Code Reviewer** - Security-focused, best practices enforcement
-- **Research Analyst** - Citation-heavy, fact-checking enabled
-- **Customer Support** - Friendly, policy-compliant responses
-
-Create new employees by:
-1. Copying the repo
-2. Editing constitution/persona/skills
-3. Running `./run.sh`
+```
+meta-agent/
+├── pi/                    # Pi Agent (cloned automatically)
+├── meta-agent-config/     # Your employee configuration
+│   ├── auth.json         # API keys
+│   ├── settings.json     # Provider, model
+│   ├── config.json       # Which modules to load
+│   ├── extensions/       # Custom behavior (.ts)
+│   └── skills/           # Knowledge (.md)
+├── .pi/                   # Local state (gitignored)
+└── run.sh                 # Launch script
+```
 
 ## Architecture
 
